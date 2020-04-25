@@ -35,6 +35,27 @@ I'm using it for my own projects, but I'm accepting PRs.
 
 ```
 
+You can extend the protocol `tla_edn.core.TLAPlusEdn` for conversion to edn
+data.
+
+``` clojure
+;; example of extension
+(extend-protocol TLAPlusEdn
+  tlc2.value.impl.BoolValue
+  (to-edn [v]
+    (.getVal v)))
+```
+
+You can create a `defmethod` for `tla-edn.core/to-tla-value` for conversion
+from edn data.
+
+``` clojure
+;; example of dispatch using defmethod for tla-edn
+(defmethod to-tla-value Boolean
+  [v]
+  (BoolValue. v))
+```
+
 ## Thanks to
 
 The people working at https://github.com/tlaplus/tlaplus, it's so great, your
