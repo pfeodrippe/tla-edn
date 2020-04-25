@@ -3,6 +3,17 @@
 A small library to convert TLA+ (TLC) values to/from edn data, it's incomplete,
 I'm using it for my own projects, but I'm accepting PRs.
 
+## Installation
+
+Add the following dependency to your `project.clj` file
+
+[![Clojars Project](http://clojars.org/pfeodrippe/tla-edn/latest-version.svg)](http://clojars.org/pfeodrippe/tla-edn)
+
+## Status
+
+It's not ready for production (and maybe never will), but you should
+use it only for testing anyway.
+
 ## Usage
 
 ``` clojure
