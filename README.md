@@ -1,7 +1,7 @@
-# TLA EDN Converter
+# TLA EDN
 
-A small library to convert TLA+ (TLC) values to/from edn data, it's incomplete,
-I'm using it for my own projects, but I'm accepting PRs.
+A small library to write TLA+ (TLC) Operators and to convert TLA+ values
+to/from EDN data.
 
 ## Installation
 
@@ -16,6 +16,58 @@ use it only for testing anyway.
 
 ## Usage
 
+### Overriding operators
+
+Let's say you have one TLA+ operator called `Inc` which you would like to
+override using Clojure.
+
+``` ruby
+(* module "Incrementer", this name is important as it will be referenced later *)
+Inc(n) == n + 1
+```
+
+The required steps are the following, you create a overriding operator
+with `defoperator`. Please, add the folder `classes` to your project file
+classpath (project.clj or deps.edn or boot.clj).
+
+``` clojure
+(ns my-ns.core
+  (:require
+   [tla-edn.core :as tla-edn]
+   [tla-edn.spec :as spec]))
+
+(spec/defop Inc {:module "Incrementer"}
+  [x]
+  (-> (tla-edn/to-edn x)
+      inc
+      tla-edn/to-tla-value))
+```
+
+`defop` makes use of `gen-class`, so you will have to compile it before
+the start of the JVM (or restart). You can use `compile-operators` for this
+
+``` clojure
+(defn -main
+  [& [cmd]]
+  (if (= (keyword cmd) :compile)
+    (spec/compile-operators 'my-ns.core) ;; It will create `.class` files at `classes/tlc2/overrides` (not tested at Windows)
+    (spec/run-spec
+    "path/to/Incrementer.tla"
+    "Incrementer.cfg")) ;; this will run the TLA+ spec with its config file
+  (System/exit 0))
+```
+
+Then from the terminal
+
+``` shell
+;; assuming you are using `deps.edn`
+$ clj -A:test -m my-ns.core compile
+# OK
+$ clj -A:test -m my-ns.core
+# TLA+ output (it will run the spec with the overrides, hopefully)
+```
+
+### Converting Data
 ``` clojure
 (require '[tla-edn.core :as tla-edn])
 ;; converting from edn to TLA+ values
