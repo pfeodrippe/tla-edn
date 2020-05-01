@@ -16,6 +16,8 @@ use it only for testing anyway.
 
 ## Usage
 
+Check an example [here](https://github.com/pfeodrippe/tla-edn-example).
+
 ### Overriding operators
 
 Let's say you have one TLA+ operator called `Inc` which you would like to
