@@ -43,17 +43,14 @@ classpath (project.clj or deps.edn or boot.clj).
       tla-edn/to-tla-value))
 ```
 
-`defop` makes use of `gen-class`, so you will have to compile it before
-the start of the JVM (or restart). You can use `compile-operators` for this
+`defop` makes use of `gen-class`, so at first time you run it, the operators
+will be compiled, then any change is automatically loaded when run again.
 
 ``` clojure
 (defn -main
-  [& [cmd]]
-  (if (= (keyword cmd) :compile)
-    (spec/compile-operators 'my-ns.core) ;; It will create `.class` files at `classes/tlc2/overrides` (not tested at Windows)
-    (spec/run-spec
-    "path/to/Incrementer.tla"
-    "Incrementer.cfg")) ;; this will run the TLA+ spec with its config file
+  []
+  ;; this will run the TLA+ spec with its config file
+  (spec/run-spec "path/to/Incrementer.tla" "Incrementer.cfg")
   (System/exit 0))
 ```
 
@@ -61,7 +58,7 @@ Then from the terminal
 
 ``` shell
 ;; assuming you are using `deps.edn`
-$ clj -A:test -m my-ns.core compile
+$ clj -A:test -m my-ns.core # this will compile (just at first time)
 # OK
 $ clj -A:test -m my-ns.core
 # TLA+ output (it will run the spec with the overrides, hopefully)
