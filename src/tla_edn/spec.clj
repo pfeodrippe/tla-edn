@@ -1,9 +1,9 @@
 (ns tla-edn.spec
   (:require
-   [clojure.java.shell :as sh]
    [clojure.pprint :as pp]
    [clojure.reflect :as reflect]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [me.raynes.fs :as fs])
   (:import
    (tlc2.overrides ITLCOverrides TLAPlusOperator)
    (tlc2 TLC)))
@@ -23,13 +23,13 @@
   Does not compile if all classes are already loaded."
   [ns]
   (when-not (classes-loaded?)
-    (sh/sh "mkdir" "-p" "classes")
+    (fs/exec "mkdir" "-p" "classes")
     (compile ns)
     (compile 'tla-edn.spec)
     ;; delete extra classes files
-    (sh/sh "find" "." "-type" "f"
-           "-path" (str "./classes/" (str/replace (str (munge ns)) #"\." "/") "*")
-           "-name" "*.class" "-delete")))
+    (fs/exec "find" "." "-type" "f"
+             "-path" (str "./classes/" (str/replace (str (munge ns)) #"\." "/") "*")
+             "-name" "*.class" "-delete")))
 
 (defmacro defop
   "Generates a class and a function which should be used to override
