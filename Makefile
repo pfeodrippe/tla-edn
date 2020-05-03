@@ -3,7 +3,7 @@ clj_cmd = env clj -O:default-options
 .PHONY: build
 build:
 	mkdir -p target
-	$(clj_cmd) -A:depstar -m hf.depstar.uberjar target/tla-edn.jar --suppress-clash
+	$(clj_cmd) -A:depstar -m hf.depstar.uberjar target/tla-edn.jar --suppress-clash -C -m tla-edn.spec
 
 .PHONY: deploy
 deploy:

@@ -1,4 +1,5 @@
 (ns tla-edn.spec
+  (:gen-class)
   (:require
    [clojure.java.shell :as sh]
    [clojure.pprint :as pp]
