@@ -15,6 +15,8 @@
  :deps
  {
   ;; `pfeodrippe/tla-tools 0.1.0-SNAPSHOT` generated from commit `4111431a169b96d0b2eb850fd6fb4416cf5af4ff` at https://github.com/tlaplus/tlaplus, it's just a convenience
-  pfeodrippe/tlaplus {:mvn/version "0.1.0-SNAPSHOT"}}
+  #_ #_pfeodrippe/tlaplus {:mvn/version "0.1.0-SNAPSHOT"}
+
+  tlc {:local/root "/home/rafael/dev/tlaplus/tlatools/org.lamport.tlatools/dist/tla2tools.jar"}}
 
  :paths ["src"]}
