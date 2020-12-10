@@ -87,9 +87,6 @@
     (catch Exception e (pp/pprint {::tlc-get {:exception e}}))))
 
 (defn run-spec
-  "This should be run from a fresh JVM as the TLA+ model checker is
-  not stable after first run (there is no known way to reset it without
-  to restart the JVM)."
   ([model-path cfg-path]
    (run-spec model-path cfg-path []))
   ([model-path cfg-path cli-opts]
