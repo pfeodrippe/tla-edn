@@ -120,5 +120,4 @@ from edn data.
 
 ## Thanks to
 
-The people working at https://github.com/tlaplus/tlaplus, it's so great, your
-software help and will help a lot of people =)
+The people working at https://github.com/tlaplus/tlaplus =D
