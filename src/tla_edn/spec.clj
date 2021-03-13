@@ -4,7 +4,8 @@
    [clojure.java.shell :as sh]
    [clojure.pprint :as pp]
    [clojure.reflect :as reflect]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [kaocha.classpath :as classpath])
   (:import
    (tlc2.overrides ITLCOverrides TLAPlusOperator)
    (tlc2 TLC)))
@@ -27,10 +28,13 @@
     (sh/sh "mkdir" "-p" "classes")
     (compile ns)
     (compile 'tla-edn.spec)
-    ;; delete extra classes files
+    ;; Delete extra classes files.
     (sh/sh "find" "." "-type" "f"
            "-path" (str "./classes/" (str/replace (str (munge ns)) #"\." "/") "*")
-           "-name" "*.class" "-delete")))
+           "-name" "*.class" "-delete")
+    ;; Dynamically add `classes` folder to classpath after compilation
+    ;; so we don't need to restart the JVM.
+    (classpath/add-classpath "classes")))
 
 (defmacro defop
   "Generates a class and a function which should be used to override
