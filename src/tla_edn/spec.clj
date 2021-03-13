@@ -7,8 +7,9 @@
    [clojure.string :as str]
    [kaocha.classpath :as classpath])
   (:import
+   (tlc2 TLC)
    (tlc2.overrides ITLCOverrides TLAPlusOperator)
-   (tlc2 TLC)))
+   (java.lang.reflect Field Modifier)))
 
 (def classes-to-be-loaded (atom {}))
 
@@ -90,6 +91,31 @@
     (into-array Class (map resolve (or (keys @classes-to-be-loaded) [])))
     (catch Exception e (pp/pprint {::tlc-get {:exception e}}))))
 
+(defn- get-class-non-final-static-fields
+  [klass]
+  {klass (->> (.getDeclaredFields klass)
+              (filter #(Modifier/isStatic (.getModifiers %)))
+              (mapv #(do (.setAccessible % true)
+                         [% (.get % nil)]))
+              (into {}))})
+
+(defn try-to-reset-tlc-state!
+  "We try to reset TLC to a good state here, certainly it will not work for all
+  (or even most) cases. If you run same things twice and they behaviour differently,
+  you have to track down in TLC which static field is the corrupt."
+  []
+  ;; Reset `LiveWorker.errFoundByThread` static field.
+  ;; This field is one of the corruptors for temporal properties violations.
+  ;; There should be many others which cause this, but at least this makes some
+  ;; examples behaviour like if there were run from a fresh JVM.
+  (-> (->> (get-class-non-final-static-fields tlc2.tool.liveness.LiveWorker)
+           vals
+           first
+           keys
+           (some #(when (= (.getName %) "errFoundByThread")
+                    %)))
+      (.set nil (int -1))))
+
 (defn run-spec
   ([model-path cfg-path]
    (run-spec model-path cfg-path []))
@@ -99,8 +125,11 @@
      (doseq [ns (map ns-name (set (vals @classes-to-be-loaded)))]
        (compile-operators ns))
      (println " ... ok"))
-   (doto (TLC.)
-     (.handleParameters (into-array (concat ["-config" cfg-path]
-                                            cli-opts
-                                            [model-path])))
-     .process)))
+   (try
+     (doto (TLC.)
+       (.handleParameters (into-array (concat ["-config" cfg-path]
+                                              cli-opts
+                                              [model-path])))
+       .process)
+     (finally
+       (try-to-reset-tlc-state!)))))
