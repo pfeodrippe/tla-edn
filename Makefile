@@ -1,9 +1,9 @@
-clj_cmd = env clj -O:default-options
+clj_cmd = env clj
 
 .PHONY: build
 build:
 	mkdir -p target
-	$(clj_cmd) -A:depstar -m hf.depstar.uberjar target/tla-edn.jar --suppress-clash -C -m tla-edn.spec
+	$(clj_cmd) -X:depstar uberjar :jar target/tla-edn.jar :sync-pom true :version '"0.5.0"' :exclude '["clojure/.*"]'
 
 .PHONY: deploy
 deploy:

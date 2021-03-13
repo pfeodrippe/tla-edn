@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>pfeodrippe</groupId>
   <artifactId>tla-edn</artifactId>
-  <version>0.4.0</version>
+  <version>0.5.0</version>
   <name>tla-edn</name>
-  <description></description>
+  <description/>
   <url>https://github.com/pfeodrippe/tla-edn</url>
   <licenses>
     <license>
@@ -31,4 +31,14 @@
       <url>https://clojars.org/repo</url>
     </repository>
   </distributionManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>1.10.2</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+  </build>
 </project>

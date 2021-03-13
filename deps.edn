@@ -2,7 +2,10 @@
  {:default-options
   {:jvm-opts ["-Duser.language=en" "-Duser.country=US"]}
 
-  :depstar {:extra-deps {seancorfield/depstar {:mvn/version "1.0.94"}}}
+  :depstar {:replace-deps
+            {com.github.seancorfield/depstar {:mvn/version "2.0.193"}}
+            :ns-default hf.depstar
+            :exec-args {}}
   :cider
   {:extra-deps {cider/cider-nrepl {:mvn/version "0.22.4"}}
    :main-opts ["-m" "nrepl.cmdline" "--middleware" "[cider.nrepl/cider-middleware]"]}
@@ -13,8 +16,6 @@
          :main-opts   ["-m" "kaocha.runner"]}}
 
  :deps
- {
-  ;; `pfeodrippe/tla-tools 0.1.0-SNAPSHOT` generated from commit `4111431a169b96d0b2eb850fd6fb4416cf5af4ff` at https://github.com/tlaplus/tlaplus, it's just a convenience
-  pfeodrippe/tlaplus {:mvn/version "0.1.0-SNAPSHOT"}}
+ {tlaplus/tlaplus {:local/root "jars/tla2tools.jar"}}
 
  :paths ["src"]}
