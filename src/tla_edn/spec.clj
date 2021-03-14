@@ -94,10 +94,14 @@
 (defn- get-class-non-final-static-fields
   [klass]
   {klass (->> (.getDeclaredFields klass)
-              (filter #(Modifier/isStatic (.getModifiers %)))
+              (filter #(and (Modifier/isStatic (.getModifiers %))
+                            (Modifier/isFinal (.getModifiers %))))
               (mapv #(do (.setAccessible % true)
                          [% (.get % nil)]))
               (into {}))})
+
+(defonce ^:private tlc-initial-values
+  (get-class-non-final-static-fields tlc2.TLCGlobals))
 
 (defn try-to-reset-tlc-state!
   "We try to reset TLC to a good state here, certainly it will not work for all
@@ -114,7 +118,13 @@
            keys
            (some #(when (= (.getName %) "errFoundByThread")
                     %)))
-      (.set nil (int -1))))
+      (.set nil (int -1)))
+
+  ;; Reset `TLCGlobals`.
+  (->> tlc-initial-values
+       vals
+       first
+       (map #(.set (key %) nil (val %)))))
 
 (defn run-spec
   ([model-path cfg-path]
