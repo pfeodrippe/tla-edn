@@ -91,11 +91,12 @@
     (into-array Class (map resolve (or (keys @classes-to-be-loaded) [])))
     (catch Exception e (pp/pprint {::tlc-get {:exception e}}))))
 
-(defn- get-class-non-final-static-fields
+(defn get-class-non-final-static-fields
   [klass]
-  {klass (->> (.getDeclaredFields klass)
+  {klass (->> (concat (.getDeclaredFields klass)
+                      (.getDeclaredFields (.getSuperclass klass)))
               (filter #(and (Modifier/isStatic (.getModifiers %))
-                            (Modifier/isFinal (.getModifiers %))))
+                            (not (Modifier/isFinal (.getModifiers %)))))
               (mapv #(do (.setAccessible % true)
                          [% (.get % nil)]))
               (into {}))})
