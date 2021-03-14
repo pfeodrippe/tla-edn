@@ -102,7 +102,8 @@
               (into {}))})
 
 (defonce ^:private tlc-initial-values
-  (get-class-non-final-static-fields tlc2.TLCGlobals))
+  (merge (get-class-non-final-static-fields tlc2.TLCGlobals)
+         (get-class-non-final-static-fields tlc2.tool.TLCStateMutExt)))
 
 (defn try-to-reset-tlc-state!
   "We try to reset TLC to a good state here, certainly it will not work for all
@@ -121,10 +122,10 @@
                     %)))
       (.set nil (int -1)))
 
-  ;; Reset `TLCGlobals`.
+  ;; Reset some static fields to their initial values.
   (->> tlc-initial-values
        vals
-       first
+       (apply concat)
        (map #(.set (key %) nil (val %)))))
 
 (defn run-spec
