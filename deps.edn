@@ -17,6 +17,8 @@
 
  :deps
  {tlaplus/tlaplus {:local/root "jars/tla2tools.jar"}
-  org.tcrawley/dynapath {:mvn/version "1.1.0"}}
+  org.tcrawley/dynapath {:mvn/version "1.1.0"}
+  org.clojure/java.classpath {:mvn/version "1.0.0"}
+  babashka/process {:mvn/version "0.0.1"}}
 
  :paths ["src"]}

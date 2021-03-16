@@ -1,6 +1,8 @@
 (ns tla-edn.spec
   (:gen-class)
   (:require
+   [babashka.process :as p]
+   [clojure.java.classpath :as cp]
    [clojure.java.shell :as sh]
    [clojure.pprint :as pp]
    [clojure.reflect :as reflect]
@@ -10,6 +12,9 @@
    (tlc2 TLC)
    (tlc2.overrides ITLCOverrides TLAPlusOperator)
    (java.lang.reflect Field Modifier)))
+
+;; For `babashka.process`.
+(prefer-method clojure.pprint/simple-dispatch clojure.lang.IPersistentMap clojure.lang.IDeref)
 
 (def classes-to-be-loaded (atom {}))
 
@@ -145,3 +150,39 @@
        .process)
      (finally
        (try-to-reset-tlc-state!)))))
+
+(defn -main
+  [model-path cfg-path namespaces-str cli-opts-str]
+  (try
+    (let [cli-opts (->> (str/split cli-opts-str #" ")
+                        (remove empty?))]
+      ;; Require namespaces so classes are loaded.
+      (->> (str/split namespaces-str #" ")
+           (remove empty?)
+           (run! #(-> % symbol require)))
+      ;; Now it's time to run the spec.
+      (if (seq cli-opts)
+        (run-spec model-path cfg-path cli-opts)
+        (run-spec model-path cfg-path)))
+    (System/exit 0)
+    (catch Exception _
+      (System/exit 1))))
+
+(defn run
+  "Like `run-spec`, but starts a new JVM and runs TLC from there."
+  ([model-path cfg-path]
+   (run model-path cfg-path []))
+  ([model-path cfg-path cli-opts]
+   (-> ^{:out :string
+         :err :string}
+       (p/$ java -cp
+            (->> (mapv str (cp/classpath))
+                 (str/join ":"))
+            clojure.main -m tla-edn.spec
+            ~model-path ~cfg-path
+            (->> (vals @classes-to-be-loaded)
+                 distinct
+                 (mapv str)
+                 (str/join " "))
+            ~(str/join " " cli-opts))
+       deref :out str/split-lines)))
