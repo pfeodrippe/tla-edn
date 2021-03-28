@@ -90,9 +90,12 @@
 
 (defn- tlc-get
   [_this]
-  ;; we need to use `eval` to load the overrides classes dynamically as
-  ;; the atom keeps the symbols, not the classes themselves
   (try
+    (when-let [tla-edn-namespaces (System/getProperty "TLA-EDN-Namespaces")]
+      ;; Require namespaces.
+      (->> (str/split tla-edn-namespaces #",")
+           (remove empty?)
+           (run! #(-> % symbol require))))
     (into-array Class (map resolve (or (keys @classes-to-be-loaded) [])))
     (catch Exception e (pp/pprint {::tlc-get {:exception e}}))))
 
