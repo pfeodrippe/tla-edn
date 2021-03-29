@@ -105,12 +105,12 @@
 (defmethod to-tla-value tlc2.value.impl.FcnRcdValue
   [v]
   (->> (map (fn [[k val]]
-              [(-> k to-tla-value .getVal)
+              [(to-tla-value k)
                (to-tla-value val)])
             v)
        (into {})
        (#(FcnRcdValue.
-          (into-array StringValue (keys %))
+          (into-array Value (keys %))
           (into-array Value (vals %))
           false))))
 
