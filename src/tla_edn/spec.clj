@@ -155,7 +155,7 @@
        (try-to-reset-tlc-state!)))))
 
 (defn -main
-  [model-path cfg-path namespaces-str cli-opts-str]
+  [model-path cfg-path tlc-result-handler-str namespaces-str cli-opts-str]
   (try
     (let [cli-opts (->> (str/split cli-opts-str #" ")
                         (remove empty?))]
@@ -164,18 +164,23 @@
            (remove empty?)
            (run! #(-> % symbol require)))
       ;; Now it's time to run the spec.
-      (if (seq cli-opts)
-        (run-spec model-path cfg-path cli-opts)
-        (run-spec model-path cfg-path)))
+      (cond-> (if (seq cli-opts)
+                (run-spec model-path cfg-path cli-opts)
+                (run-spec model-path cfg-path))
+        (not= tlc-result-handler-str "0") ((resolve (symbol tlc-result-handler-str)))))
     (System/exit 0)
     (catch Exception _
       (System/exit 1))))
 
 (defn run
-  "Like `run-spec`, but starts a new JVM and runs TLC from there."
+  "Like `run-spec`, but starts a new JVM and runs TLC from there.
+  If you use it, `:tlc-result-handler` should be the var of a function which
+  receives one argument."
   ([model-path cfg-path]
    (run model-path cfg-path []))
   ([model-path cfg-path cli-opts]
+   (run model-path cfg-path cli-opts {}))
+  ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response?]}]
    (-> ^{:out :string
          :err :string}
        (p/$ java -cp
@@ -183,9 +188,17 @@
                  (str/join ":"))
             clojure.main -m tla-edn.spec
             ~model-path ~cfg-path
-            (->> (vals @classes-to-be-loaded)
-                 distinct
-                 (mapv str)
-                 (str/join " "))
+            ~(if tlc-result-handler (str (symbol tlc-result-handler)) "0")
+            ~(if tlc-result-handler
+               (->> (vals @classes-to-be-loaded)
+                    (cons (namespace (symbol tlc-result-handler)))
+                    (mapv str)
+                    distinct
+                    (str/join " "))
+               (->> (vals @classes-to-be-loaded)
+                    (mapv str)
+                    distinct
+                    (str/join " ")))
             ~(str/join " " cli-opts))
-       deref :out str/split-lines)))
+       deref (cond->
+                 (not complete-response?) (-> :out str/split-lines)))))
