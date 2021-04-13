@@ -164,10 +164,14 @@
            (remove empty?)
            (run! #(-> % symbol require)))
       ;; Now it's time to run the spec.
-      (cond-> (if (seq cli-opts)
-                (run-spec model-path cfg-path cli-opts)
-                (run-spec model-path cfg-path))
-        (not= tlc-result-handler-str "0") ((resolve (symbol tlc-result-handler-str)))))
+      (if (not= tlc-result-handler-str "0")
+        (-> (if (seq cli-opts)
+              #(run-spec model-path cfg-path cli-opts)
+              #(run-spec model-path cfg-path))
+            ((resolve (symbol tlc-result-handler-str))))
+        (if (seq cli-opts)
+          (run-spec model-path cfg-path cli-opts)
+          (run-spec model-path cfg-path))))
     (System/exit 0)
     (catch Exception _
       (System/exit 1))))
