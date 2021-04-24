@@ -11,6 +11,7 @@
   (:import
    (tlc2 TLC)
    (tlc2.overrides ITLCOverrides TLAPlusOperator)
+   (tlc2.value.impl Value)
    (java.lang.reflect Field Modifier)))
 
 ;; For `babashka.process`.
@@ -73,7 +74,7 @@
                             {identifier ~identifier
                              module ~module
                              warn ~warn}})
-                       ~(vec (repeat (count arg-list) Object)) Object]
+                       ~(vec (repeat (count arg-list) Value)) Value]
                      `{:static true})])
 
        (defn ~(with-meta (symbol (str prefix name))

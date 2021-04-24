@@ -36,7 +36,7 @@
   tlc2.value.impl.TupleValue
   (-to-edn [v]
     (with-meta
-      (map -to-edn (.getElems v))
+      (mapv -to-edn (.getElems v))
       {:tla-plus-type tlc2.value.impl.TupleValue}))
 
   tlc2.value.impl.SetEnumValue

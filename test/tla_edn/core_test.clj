@@ -16,7 +16,7 @@
 (deftest loopback-test
   (let [data [{"a" 3}
               2
-              #{"look" '(1 2)}
+              #{"look" [1 2]}
               [[#{{"b" {"c" #{6 4 5}}}}]]]]
     (is (= data
            (tla-edn/to-edn (tla-edn/to-tla-value data))))
