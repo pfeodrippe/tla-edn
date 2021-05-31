@@ -79,7 +79,10 @@
 
        (defn ~(with-meta (symbol (str prefix name))
                 (merge (meta name)
-                       (assoc opts :identifier identifier)))
+                       (assoc opts
+                              :identifier identifier
+                              :klass (str klass)
+                              :op-ns (str *ns*))))
          ~@fdecl))))
 
 ;; `tlc2.overrides.TLCOverrides` is loaded by TLC
@@ -185,7 +188,8 @@
    (run model-path cfg-path []))
   ([model-path cfg-path cli-opts]
    (run model-path cfg-path cli-opts {}))
-  ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response?]}]
+  ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response? :loaded-classes]
+                                  :or {loaded-classes (vals @classes-to-be-loaded)}}]
    (-> ^{:out :string
          :err :string}
        (p/$ java -cp
@@ -195,12 +199,12 @@
             ~model-path ~cfg-path
             ~(if tlc-result-handler (str (symbol tlc-result-handler)) "0")
             ~(if tlc-result-handler
-               (->> (vals @classes-to-be-loaded)
+               (->> loaded-classes
                     (cons (namespace (symbol tlc-result-handler)))
                     (mapv str)
                     distinct
                     (str/join " "))
-               (->> (vals @classes-to-be-loaded)
+               (->> loaded-classes
                     (mapv str)
                     distinct
                     (str/join " ")))
