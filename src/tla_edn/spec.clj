@@ -190,24 +190,25 @@
    (run model-path cfg-path cli-opts {}))
   ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response? :loaded-classes]
                                   :or {loaded-classes (vals @classes-to-be-loaded)}}]
-   (-> ^{:out :string
-         :err :string}
-       (p/$ java -cp
-            (->> (mapv str (cp/classpath))
-                 (str/join ":"))
-            clojure.main -m tla-edn.spec
-            ~model-path ~cfg-path
-            ~(if tlc-result-handler (str (symbol tlc-result-handler)) "0")
-            ~(if tlc-result-handler
-               (->> loaded-classes
-                    (cons (namespace (symbol tlc-result-handler)))
-                    (mapv str)
-                    distinct
-                    (str/join " "))
-               (->> loaded-classes
-                    (mapv str)
-                    distinct
-                    (str/join " ")))
-            ~(str/join " " cli-opts))
-       deref (cond->
-                 (not complete-response?) (-> :out str/split-lines)))))
+   (cond-> (p/$ java -cp
+                (->> (mapv str (cp/classpath))
+                     (str/join ":"))
+                clojure.main -m tla-edn.spec
+                ~model-path ~cfg-path
+                ~(if tlc-result-handler (str (symbol tlc-result-handler)) "0")
+                ~(if tlc-result-handler
+                   (->> loaded-classes
+                        (cons (namespace (symbol tlc-result-handler)))
+                        (mapv str)
+                        distinct
+                        (str/join " "))
+                   (->> loaded-classes
+                        (mapv str)
+                        distinct
+                        (str/join " ")))
+                ~(str/join " " cli-opts))
+     (not complete-response?)
+     (-> deref
+         :out
+         slurp
+         str/split-lines))))
