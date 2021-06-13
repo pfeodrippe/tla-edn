@@ -190,9 +190,10 @@
    (run model-path cfg-path cli-opts {}))
   ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response? :loaded-classes]
                                   :or {loaded-classes (vals @classes-to-be-loaded)}}]
-   (cond-> (p/$ java -cp
-                (->> (mapv str (cp/classpath))
-                     (str/join ":"))
+   (cond-> (p/$ java
+                "-Djava.awt.headless=true"
+                -cp (->> (mapv str (cp/classpath))
+                         (str/join ":"))
                 clojure.main -m tla-edn.spec
                 ~model-path ~cfg-path
                 ~(if tlc-result-handler (str (symbol tlc-result-handler)) "0")
