@@ -90,7 +90,7 @@
           (into-array Value (vals %))
           false))))
 
-(defmethod to-tla-value clojure.lang.PersistentArrayMap
+(defmethod to-tla-value clojure.lang.APersistentMap
   [v]
   (->> (map (fn [[k val]]
               [(-> k to-tla-value .getVal)
