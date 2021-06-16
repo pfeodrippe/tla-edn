@@ -144,17 +144,20 @@
   ([model-path cfg-path]
    (run-spec model-path cfg-path []))
   ([model-path cfg-path cli-opts]
+   (run-spec model-path cfg-path cli-opts {}))
+  ([model-path cfg-path cli-opts {:keys [:run?]
+                                  :or {run? true}}]
    (when-not (classes-loaded?)
      (print "Compiling tla-edn override operators ..." @classes-to-be-loaded)
      (doseq [ns (map ns-name (set (vals @classes-to-be-loaded)))]
        (compile-operators ns))
      (println " ... ok"))
    (try
-     (doto (TLC.)
-       (.handleParameters (into-array (concat ["-config" cfg-path]
-                                              cli-opts
-                                              [model-path])))
-       .process)
+     (let [tlc (doto (TLC.) (.handleParameters (into-array (concat ["-config" cfg-path]
+                                                                   cli-opts
+                                                                   [model-path]))))]
+       (when run? (.process tlc))
+       tlc)
      (finally
        (try-to-reset-tlc-state!)))))
 
@@ -170,8 +173,8 @@
       ;; Now it's time to run the spec.
       (if (not= tlc-result-handler-str "0")
         (-> (if (seq cli-opts)
-              #(run-spec model-path cfg-path cli-opts)
-              #(run-spec model-path cfg-path))
+              #(run-spec model-path cfg-path cli-opts {:run? false})
+              #(run-spec model-path cfg-path [] {:run? false}))
             ((resolve (symbol tlc-result-handler-str))))
         (if (seq cli-opts)
           (run-spec model-path cfg-path cli-opts)
@@ -188,12 +191,19 @@
    (run model-path cfg-path []))
   ([model-path cfg-path cli-opts]
    (run model-path cfg-path cli-opts {}))
-  ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response? :loaded-classes]
+  ([model-path cfg-path cli-opts {:keys [:tlc-result-handler :complete-response? :loaded-classes
+                                         :raw-args]
                                   :or {loaded-classes (vals @classes-to-be-loaded)}}]
    (cond-> (p/$ java
                 "-Djava.awt.headless=true"
-                -cp (->> (mapv str (cp/classpath))
-                         (str/join ":"))
+                ~(or (some->> raw-args
+                              seq
+                              (mapv str)
+                              (str/join " "))
+                     ;; Some bogus property just to make this work with `p/$`.
+                     "-DXxXx=true")
+                -cp ~(->> (mapv str (cp/classpath))
+                          (str/join ":"))
                 clojure.main -m tla-edn.spec
                 ~model-path ~cfg-path
                 ~(if tlc-result-handler (str (symbol tlc-result-handler)) "0")
