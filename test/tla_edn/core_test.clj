@@ -6,16 +6,18 @@
 (deftest core-test
   (is (= "[a |-> 3]"
          (str (tla-edn/to-tla-value {:a 3}))))
-  (is (= "<<[a |-> 3, b__a |-> 5], 2, {<<1, 2>>, \"look\"}, <<<<{[b |-> [c |-> {4, 5, 6}]]}>>>>>>"
+  (is (= "<<[a |-> 3, b__a |-> 5], 2, [tla-edn.record__empty? |-> TRUE], {<<1, 2>>, \"look\"}, <<<<{[b |-> [c |-> {4, 5, 6}]]}>>>>>>"
          (str
           (tla-edn/to-tla-value [{:a 3 :b/a 5}
                                  2
+                                 {}
                                  #{"look" '(1 2)}
                                  [[#{{"b" {:c #{6 4 5}}}}]]])))))
 
 (deftest loopback-test
   (let [data [{"a" 3}
               2
+              {}
               #{"look" [1 2]}
               [[#{{"b" {"c" #{6 4 5}}}}]]]]
     (is (= data

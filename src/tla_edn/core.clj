@@ -21,10 +21,15 @@
 (extend-protocol TLAPlusEdn
   tlc2.value.impl.RecordValue
   (-to-edn [v]
-    (with-meta
-      (zipmap (map -to-edn (.-names v))
-              (map -to-edn (.-values v)))
-      {:tla-plus-type tlc2.value.impl.RecordValue}))
+    (let [name->value (zipmap (map -to-edn (.-names v))
+                              (map -to-edn (.-values v)))]
+      (with-meta
+        ;; We add a default value for empty because TLA+ does not
+        ;; have a literal for a empty map.
+        (if (= name->value {:tla-edn.record/empty? true})
+          {}
+          name->value)
+        {:tla-plus-type tlc2.value.impl.RecordValue})))
 
   tlc2.value.impl.FcnRcdValue
   (-to-edn [v]
@@ -80,27 +85,31 @@
 
 (defmethod to-tla-value tlc2.value.impl.RecordValue
   [v]
-  (->> (map (fn [[k val]]
-              [(-> k to-tla-value .getVal)
-               (to-tla-value val)])
-            v)
-       (into {})
-       (#(RecordValue.
-          (into-array UniqueString (keys %))
-          (into-array Value (vals %))
-          false))))
+  (if (empty? v)
+    (to-tla-value {:tla-edn.record/empty? true})
+    (->> (map (fn [[k val]]
+                [(-> k to-tla-value .getVal)
+                 (to-tla-value val)])
+              v)
+         (into {})
+         (#(RecordValue.
+            (into-array UniqueString (keys %))
+            (into-array Value (vals %))
+            false)))))
 
 (defmethod to-tla-value clojure.lang.APersistentMap
   [v]
-  (->> (map (fn [[k val]]
-              [(-> k to-tla-value .getVal)
-               (to-tla-value val)])
-            v)
-       (into {})
-       (#(RecordValue.
-          (into-array UniqueString (keys %))
-          (into-array Value (vals %))
-          false))))
+  (if (empty? v)
+    (to-tla-value {:tla-edn.record/empty? true})
+    (->> (map (fn [[k val]]
+                [(-> k to-tla-value .getVal)
+                 (to-tla-value val)])
+              v)
+         (into {})
+         (#(RecordValue.
+            (into-array UniqueString (keys %))
+            (into-array Value (vals %))
+            false)))))
 
 (defmethod to-tla-value tlc2.value.impl.FcnRcdValue
   [v]
