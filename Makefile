@@ -3,7 +3,7 @@ clj_cmd = env clj
 .PHONY: build
 build:
 	mkdir -p target
-	$(clj_cmd) -X:depstar uberjar :jar target/tla-edn.jar :sync-pom true :version '"0.10.0-SNAPSHOT"' :exclude '["clojure/.*", "dynapath/.*", "babashka.*" "clojure.java.classpath/.*"]' :compile-ns '[tla-edn.spec]'
+	$(clj_cmd) -X:depstar uberjar :jar target/tla-edn.jar :sync-pom true :version '"0.11.0-SNAPSHOT"' :exclude '["clojure/.*", "dynapath/.*", "babashka.*" "clojure.java.classpath/.*"]' :compile-ns '[tla-edn.spec]'
 
 .PHONY: deploy
 deploy:
