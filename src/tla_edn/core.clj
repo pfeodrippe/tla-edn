@@ -197,3 +197,15 @@
                                     (type v))
          "\n for value " (binding [*print-meta* true]
                            (pr-str v))))))
+
+(comment
+
+  (let [result (tla-edn.spec/run "wire.tla" "wire.cfg" [] {:complete-response? true})]
+    (with-open [rdr (clojure.java.io/reader (:out result))]
+      (binding [*in* rdr]
+        (loop []
+          (when-let [line (read-line)]
+            (println line)
+            (recur))))))
+
+  ())

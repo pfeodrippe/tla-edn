@@ -185,7 +185,7 @@
 
 (defn run
   "Like `run-spec`, but starts a new JVM and runs TLC from there.
-  If you use it, `:tlc-result-handler` should be the var of a function which
+  If you use it, `:tlc-result-handler` should be a var of a function which
   receives one argument."
   ([model-path cfg-path]
    (run model-path cfg-path []))
