@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>pfeodrippe</groupId>
   <artifactId>tla-edn</artifactId>
-  <version>0.16.0</version>
+  <version>0.17.0</version>
   <name>tla-edn</name>
   <description/>
   <url>https://github.com/pfeodrippe/tla-edn</url>
