@@ -14,6 +14,13 @@ Add the following dependency to your `project.clj` file
 It's not ready for production (and maybe never will), but you should
 use it only for testing anyway.
 
+## Build
+
+```shell
+# Update the version in the Makefile before running below.
+cp /Users/pfeodrippe/dev/tlaplus/tlatools/org.lamport.tlatools/dist/tla2tools.jar ~/dev/tla-edn/jars/tla2tools.jar && make build && make deploy
+```
+
 ## Usage
 
 Check an example [here](https://github.com/pfeodrippe/tla-edn-example).
