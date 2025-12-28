@@ -21,34 +21,64 @@
 (extend-protocol TLAPlusEdn
   tlc2.value.impl.RecordValue
   (-to-edn [v]
-    (let [name->value (zipmap (map -to-edn (.-names v))
-                              (map -to-edn (.-values v)))]
-      (with-meta
-        ;; We add a default value for empty because TLA+ does not
-        ;; have a literal for a empty map.
-        (if (= name->value {:tla-edn.record/empty? true})
-          {}
-          name->value)
-        {:tla-plus-type tlc2.value.impl.RecordValue})))
+    ;; Single-pass construction avoiding intermediate sequences
+    (let [names (.-names v)
+          values (.-values v)
+          n (alength names)]
+      (if (zero? n)
+        (with-meta {} {:tla-plus-type tlc2.value.impl.RecordValue})
+        (let [result (loop [i 0, acc (transient {})]
+                       (if (< i n)
+                         (recur (unchecked-inc i)
+                                (assoc! acc
+                                        (-to-edn (aget names i))
+                                        (-to-edn (aget values i))))
+                         (persistent! acc)))]
+          (with-meta
+            (if (= result {:tla-edn.record/empty? true})
+              {}
+              result)
+            {:tla-plus-type tlc2.value.impl.RecordValue})))))
 
   tlc2.value.impl.FcnRcdValue
   (-to-edn [v]
-    (with-meta
-      (zipmap (map #(-to-edn (.val %)) (.-domain v))
-              (map -to-edn (.-values v)))
-      {:tla-plus-type tlc2.value.impl.FcnRcdValue}))
+    ;; Single-pass construction
+    (let [domain (.-domain v)
+          values (.-values v)
+          n (alength domain)]
+      (with-meta
+        (loop [i 0, acc (transient {})]
+          (if (< i n)
+            (recur (unchecked-inc i)
+                   (assoc! acc
+                           (-to-edn (.val ^Value (aget domain i)))
+                           (-to-edn (aget values i))))
+            (persistent! acc)))
+        {:tla-plus-type tlc2.value.impl.FcnRcdValue})))
 
   tlc2.value.impl.TupleValue
   (-to-edn [v]
-    (with-meta
-      (mapv -to-edn (.getElems v))
-      {:tla-plus-type tlc2.value.impl.TupleValue}))
+    ;; Use reduce for single-pass
+    (let [elems (.getElems v)
+          n (alength elems)]
+      (with-meta
+        (loop [i 0, acc (transient [])]
+          (if (< i n)
+            (recur (unchecked-inc i) (conj! acc (-to-edn (aget elems i))))
+            (persistent! acc)))
+        {:tla-plus-type tlc2.value.impl.TupleValue})))
 
   tlc2.value.impl.SetEnumValue
   (-to-edn [v]
-    (with-meta
-      (set (map -to-edn (.toArray (.-elems v))))
-      {:tla-plus-type tlc2.value.impl.SetEnumValue}))
+    ;; Single-pass set construction
+    (let [arr (.toArray (.-elems v))
+          n (alength arr)]
+      (with-meta
+        (loop [i 0, acc (transient #{})]
+          (if (< i n)
+            (recur (unchecked-inc i) (conj! acc (-to-edn (aget arr i))))
+            (persistent! acc)))
+        {:tla-plus-type tlc2.value.impl.SetEnumValue})))
 
   tlc2.value.impl.IntValue
   (-to-edn [v]
@@ -56,20 +86,20 @@
 
   tlc2.value.impl.StringValue
   (-to-edn [v]
-    (let [s (str (.val v))]
-      (if (str/includes? s "__")
-        (let [[nmsp n] (str/split s #"__")]
-          (keyword nmsp n))
+    (let [s (str (.val v))
+          idx (.indexOf s "__")]
+      (if (>= idx 0)
+        (keyword (subs s 0 idx) (subs s (+ idx 2)))
         (if *string-to-keyword?*
           (keyword s)
           s))))
 
   UniqueString
   (-to-edn [v]
-    (let [s (str v)]
-      (if (str/includes? s "__")
-        (let [[nmsp n] (str/split s #"__")]
-          (keyword nmsp n))
+    (let [s (str v)
+          idx (.indexOf s "__")]
+      (if (>= idx 0)
+        (keyword (subs s 0 idx) (subs s (+ idx 2)))
         (if *string-to-keyword?*
           (keyword s)
           s))))
@@ -87,41 +117,47 @@
   [v]
   (if (empty? v)
     (to-tla-value {:tla-edn.record/empty? true})
-    (->> (map (fn [[k val]]
-                [(-> k to-tla-value .getVal)
-                 (to-tla-value val)])
-              v)
-         (into {})
-         (#(RecordValue.
-            (into-array UniqueString (keys %))
-            (into-array Value (vals %))
-            false)))))
+    ;; Single-pass array construction - avoid intermediate HashMap
+    (let [entries (seq v)
+          n (count entries)
+          names (make-array UniqueString n)
+          values (make-array Value n)]
+      (loop [i 0, entries entries]
+        (when-let [[k val] (first entries)]
+          (aset names i (-> k to-tla-value .getVal))
+          (aset values i (to-tla-value val))
+          (recur (unchecked-inc i) (rest entries))))
+      (RecordValue. names values false))))
 
 (defmethod to-tla-value clojure.lang.APersistentMap
   [v]
   (if (empty? v)
     (to-tla-value {:tla-edn.record/empty? true})
-    (->> (map (fn [[k val]]
-                [(-> k to-tla-value .getVal)
-                 (to-tla-value val)])
-              v)
-         (into {})
-         (#(RecordValue.
-            (into-array UniqueString (keys %))
-            (into-array Value (vals %))
-            false)))))
+    ;; Single-pass array construction - avoid intermediate HashMap
+    (let [entries (seq v)
+          n (count entries)
+          names (make-array UniqueString n)
+          values (make-array Value n)]
+      (loop [i 0, entries entries]
+        (when-let [[k val] (first entries)]
+          (aset names i (-> k to-tla-value .getVal))
+          (aset values i (to-tla-value val))
+          (recur (unchecked-inc i) (rest entries))))
+      (RecordValue. names values false))))
 
 (defmethod to-tla-value tlc2.value.impl.FcnRcdValue
   [v]
-  (->> (map (fn [[k val]]
-              [(to-tla-value k)
-               (to-tla-value val)])
-            v)
-       (into {})
-       (#(FcnRcdValue.
-          (into-array Value (keys %))
-          (into-array Value (vals %))
-          false))))
+  ;; Single-pass array construction
+  (let [entries (seq v)
+        n (count entries)
+        keys-arr (make-array Value n)
+        values-arr (make-array Value n)]
+    (loop [i 0, entries entries]
+      (when-let [[k val] (first entries)]
+        (aset keys-arr i (to-tla-value k))
+        (aset values-arr i (to-tla-value val))
+        (recur (unchecked-inc i) (rest entries))))
+    (FcnRcdValue. keys-arr values-arr false)))
 
 (defmethod to-tla-value tlc2.value.impl.TupleValue
   [v]

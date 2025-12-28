@@ -153,6 +153,15 @@
   ;; that are essential for parsing.
   )
 
+;; Cache Field objects at load time to avoid reflection on every reset call
+(def ^:private ^java.lang.reflect.Field intern-tbl-field
+  (doto (.getDeclaredField (Class/forName "util.UniqueString") "internTbl")
+    (.setAccessible true)))
+
+(def ^:private ^java.lang.reflect.Field var-count-field
+  (doto (.getDeclaredField (Class/forName "util.UniqueString") "varCount")
+    (.setAccessible true)))
+
 (defn- reset-unique-string-locations!
   "Reset all UniqueString.loc fields to -1 to allow clean Defns lookups.
 
@@ -168,23 +177,18 @@
   will assign fresh indices for the new table."
   []
   (try
-    ;; Get the static internTbl field from UniqueString
-    (let [unique-string-class (Class/forName "util.UniqueString")
-          intern-tbl-field (.getDeclaredField unique-string-class "internTbl")]
-      (.setAccessible intern-tbl-field true)
-      (let [intern-tbl (.get intern-tbl-field nil)
-            ;; Get the table array from InternTable
-            table-field (.getDeclaredField (class intern-tbl) "table")]
-        (.setAccessible table-field true)
-        (let [table (.get table-field intern-tbl)]
-          ;; Reset loc to -1 on every UniqueString in the table
-          (dotimes [i (alength table)]
-            (when-let [us (aget table i)]
-              (.setLoc us (int -1))))))
-      ;; Also reset varCount to 0 so variable/definition distinction is clean
-      (let [var-count-field (.getDeclaredField unique-string-class "varCount")]
-        (.setAccessible var-count-field true)
-        (.set var-count-field nil (int 0))))
+    ;; Use cached Field objects for faster access
+    (let [intern-tbl (.get intern-tbl-field nil)
+          ;; Get the table array from InternTable (cache this field too if called frequently)
+          table-field (.getDeclaredField (class intern-tbl) "table")]
+      (.setAccessible table-field true)
+      (let [table (.get table-field intern-tbl)]
+        ;; Reset loc to -1 on every UniqueString in the table
+        (dotimes [i (alength table)]
+          (when-let [us (aget table i)]
+            (.setLoc us (int -1))))))
+    ;; Also reset varCount to 0 so variable/definition distinction is clean
+    (.set var-count-field nil (int 0))
     (catch Exception e
       ;; Log but don't fail - this is a best-effort reset
       (println "Warning: Failed to reset UniqueString locations:" (.getMessage e)))))
@@ -199,7 +203,11 @@
   (reset-sany-state!)
   ;; CRITICAL: Reset UniqueString.loc fields to allow clean Defns lookups.
   ;; This is the fix for running different specs sequentially.
-  (reset-unique-string-locations!))
+  (reset-unique-string-locations!)
+  ;; Set ToolIO to TOOL mode to buffer output instead of printing to stdout.
+  ;; This prevents TLC output from interfering with the calling application.
+  (ToolIO/setMode ToolIO/TOOL)
+  (ToolIO/reset))
 
 (defn run-spec
   ([model-path cfg-path]
